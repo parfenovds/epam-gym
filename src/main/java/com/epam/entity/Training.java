@@ -16,6 +16,6 @@ public class Training implements AbstractEntity {
   private Long trainerId;
   private String trainingName;
   private Long trainingTypeId;
-  private LocalDate trainingDate;//TODO: think about date format
+  private LocalDate trainingDate;
   private Long trainingDuration;
 }

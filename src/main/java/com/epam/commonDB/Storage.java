@@ -1,10 +1,12 @@
 package com.epam.commonDB;
 
+import com.epam.entity.AbstractEntity;
 import com.epam.entity.Trainee;
 import com.epam.entity.Trainer;
 import com.epam.entity.Training;
 import com.epam.entity.TrainingType;
 import com.epam.entity.User;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,4 +27,27 @@ public class Storage {
   private Map<Long, Training> trainings = new HashMap<>();
   private Map<Long, TrainingType> trainingTypes = new HashMap<>();
   private Map<Long, User> users = new HashMap<>();
+
+//  public <T> Map<Long, T> getMapByClass(Class<? extends AbstractEntity> clazz) {
+//    try {
+//      return (Map<Long, T>) clazz.getMethod("get" + clazz.getSimpleName() + "s").invoke(this);
+//    } catch (IllegalAccessException e) {
+//      throw new RuntimeException(e);
+//    } catch (InvocationTargetException e) {
+//      throw new RuntimeException(e);
+//    } catch (NoSuchMethodException e) {
+//      throw new RuntimeException(e);
+//    }
+//  }
+//  public AtomicLong getAtomicLongByClass(Class<? extends AbstractEntity> clazz) {
+//    try {
+//      return (AtomicLong) clazz.getMethod("getNext" + clazz.getSimpleName() + "Id").invoke(this);
+//    } catch (IllegalAccessException e) {
+//      throw new RuntimeException(e);
+//    } catch (InvocationTargetException e) {
+//      throw new RuntimeException(e);
+//    } catch (NoSuchMethodException e) {
+//      throw new RuntimeException(e);
+//    }
+//  }
 }

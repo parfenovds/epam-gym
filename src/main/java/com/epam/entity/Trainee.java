@@ -14,8 +14,8 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Trainee implements AbstractEntity {
   private Long id;
-  private LocalDate dateOfBirth;//TODO: think about date format
+  private LocalDate dateOfBirth;
   private String address;
   private Long userId;
-  private final Collection<Training> trainings = new ArrayList<>();
+  private Collection<Training> trainings = new ArrayList<>();
 }

@@ -15,5 +15,5 @@ public class Trainer implements AbstractEntity {
   private Long id;
   private Long trainingTypeId;
   private Long userId;
-  private final Collection<Training> trainings = new ArrayList<>();
+  private Collection<Training> trainings = new ArrayList<>();
 }
