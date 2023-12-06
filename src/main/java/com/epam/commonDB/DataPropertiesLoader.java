@@ -9,30 +9,35 @@ import java.util.Map;
 import java.util.Properties;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 @Component
 @Log4j2
 public class DataPropertiesLoader implements BeanPostProcessor {
+  public static final String NON_MAP_PREFIX = "next";
+  public static final String SET_METHOD_PREFIX = "set";
+  public static final String GET_METHOD_PREFIX = "get";
+  public static final String PATH_TO_ENTITIES = "com.epam.entity.";
+  public static final String STORAGE_BEAN_NAME = "storage";
+  @Value("data.properties")
+  private Resource dataPropertiesFile;
   @Override
   public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-    if (beanName.equals("storage")) {
+    if (beanName.equals(STORAGE_BEAN_NAME)) {
       fillStorage((Storage) bean);
     }
     return bean;
   }
 
   private void fillStorage(Storage storage) {
-    Resource resource = new ClassPathResource("data.properties");
-    try (InputStream inputStream = resource.getInputStream()) {
+    try (InputStream inputStream = dataPropertiesFile.getInputStream()) {
       Properties properties = new Properties();
       properties.load(inputStream);
       List<String> sortedPropertyNames = getSortedPropertyNames(properties);
       fillStorageWithValues(storage, sortedPropertyNames, properties);
-      System.out.println(properties.stringPropertyNames().stream().sorted().findFirst());
       log.info("Data loaded successfully into Storage.");
     } catch (IOException e) {
       log.error("Failed to load data from JSON.", e);
@@ -60,7 +65,7 @@ public class DataPropertiesLoader implements BeanPostProcessor {
     int i = 0;
     while (i < sortedPropertyNames.size()) {
       String currentPropertyName = sortedPropertyNames.get(i);
-      if (currentPropertyName.startsWith("next")) {
+      if (currentPropertyName.startsWith(NON_MAP_PREFIX)) {
         String value = properties.getProperty(currentPropertyName);
         setNextIdsInStorage(storage, currentPropertyName, value);
         ++i;
@@ -68,7 +73,7 @@ public class DataPropertiesLoader implements BeanPostProcessor {
         String[] splitPropertyName = getSplitStringByDot(currentPropertyName);
         String mapName = splitPropertyName[0];
         Long id = Long.parseLong(splitPropertyName[1]);
-        Class<?> clazz = Class.forName("com.epam.entity." + capitalizeFirstLetterAndRemoveLastLetter(mapName));
+        Class<?> clazz = Class.forName(PATH_TO_ENTITIES + capitalizeFirstLetterAndRemoveLastLetter(mapName));
         Object objectToPutInMap = clazz.getDeclaredConstructor().newInstance();
         while (i < sortedPropertyNames.size() && sortedPropertyNames.get(i).startsWith(mapName + "." + id + ".")) {
           currentPropertyName = sortedPropertyNames.get(i);
@@ -86,7 +91,7 @@ public class DataPropertiesLoader implements BeanPostProcessor {
 
   private static void setFieldInObjectToPutInMap(Object objectToPutInMap, String fieldName, Class<?> fieldType, String value) {
     try {
-      objectToPutInMap.getClass().getMethod("set" + capitalizeFirstLetter(fieldName), fieldType
+      objectToPutInMap.getClass().getMethod(SET_METHOD_PREFIX + capitalizeFirstLetter(fieldName), fieldType
       ).invoke(objectToPutInMap, ObjectFactoryUtil.getObjectFactory(fieldType).create(value));
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
@@ -113,7 +118,7 @@ public class DataPropertiesLoader implements BeanPostProcessor {
     try {
       Class<?> type = storage.getClass().getDeclaredField(fieldName).getType();
       storage.getClass().getMethod(
-          "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1),
+          SET_METHOD_PREFIX + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1),
           type
       ).invoke(storage, ObjectFactoryUtil.getObjectFactory(type).create(value));
     } catch (IllegalAccessException e) {
@@ -134,7 +139,7 @@ public class DataPropertiesLoader implements BeanPostProcessor {
   private <T> Map<Long, T> getCertainMapFromStorage(Storage storage, String mapName) {
     String capitalizedMapName = capitalizeFirstLetter(mapName);
     try {
-      return (Map<Long, T>) storage.getClass().getMethod("get" + capitalizedMapName).invoke(storage);
+      return (Map<Long, T>) storage.getClass().getMethod(GET_METHOD_PREFIX + capitalizedMapName).invoke(storage);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
