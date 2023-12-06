@@ -1,0 +1,133 @@
+{
+  "trainings": {
+    "1": {
+      "id": 1,
+      "traineeId": 1,
+      "trainerId": 1,
+      "trainingName": "Java Basics",
+      "trainingTypeId": 1,
+      "trainingDate": "2023-01-10",
+      "trainingDuration": 3
+    },
+    "2": {
+      "id": 2,
+      "traineeId": 1,
+      "trainerId": 2,
+      "trainingName": "Spring Framework",
+      "trainingTypeId": 2,
+      "trainingDate": "2023-02-15",
+      "trainingDuration": 5
+    },
+    "3": {
+      "id": 3,
+      "traineeId": 3,
+      "trainerId": 3,
+      "trainingName": "Python Programming",
+      "trainingTypeId": 1,
+      "trainingDate": "2023-03-20",
+      "trainingDuration": 4
+    }
+  },
+  "trainers": {
+    "1": {
+      "id": 1,
+      "trainingTypeId": 1,
+      "userId": 1
+    },
+    "2": {
+      "id": 2,
+      "trainingTypeId": 2,
+      "userId": 2
+    },
+    "3": {
+      "id": 3,
+      "trainingTypeId": 1,
+      "userId": 3
+    }
+  },
+  "trainees": {
+    "1": {
+      "id": 1,
+      "dateOfBirth": "1990-05-15",
+      "address": "123 Main Street",
+      "userId": 4
+    },
+    "2": {
+      "id": 2,
+      "dateOfBirth": "1985-08-20",
+      "address": "456 Elm Street",
+      "userId": 5
+    },
+    "3": {
+      "id": 3,
+      "dateOfBirth": "1993-10-10",
+      "address": "789 Oak Street",
+      "userId": 6
+    }
+  },
+  "trainingTypes": {
+    "1": {
+      "id": 1,
+      "trainingTypeName": "Workshop"
+    },
+    "2": {
+      "id": 2,
+      "trainingTypeName": "Seminar"
+    }
+  },
+  "users": {
+    "1": {
+      "id": 1,
+      "firstName": "Eliezer",
+      "lastName": "Yudkowsky",
+      "username": "Eliezer.Yudkowsky",
+      "password": "pass123",
+      "isActive": true
+    },
+    "2": {
+      "id": 2,
+      "firstName": "Quirinus",
+      "lastName": "Quirrell",
+      "username": "Quirinus.Quirrell",
+      "password": "pass456",
+      "isActive": true
+    },
+    "3": {
+      "id": 3,
+      "firstName": "Harry",
+      "lastName": "Potter",
+      "username": "Harry.Potter",
+      "password": "asdfioasudf",
+      "isActive": true
+    },
+    "4": {
+      "id": 4,
+      "firstName": "Ronald",
+      "lastName": "Weasley",
+      "username": "Ronald.Weasley",
+      "password": "asdfuowurqka;",
+      "isActive": true
+    },
+    "5": {
+      "id": 5,
+      "firstName": "Hermione",
+      "lastName": "Granger",
+      "username": "Hermione.Granger",
+      "password": "uoqpwrrtpoiqug",
+      "isActive": true
+    },
+    "6": {
+      "id": 6,
+      "firstName": "Draco",
+      "lastName": "Malfoy",
+      "username": "Draco.Malfoy",
+      "password": "zxcmvnzxxcvnnm",
+      "isActive": true
+    }
+  },
+  "nextTrainingId": 4,
+  "nextTrainerId": 4,
+  "nextTraineeId": 4,
+  "nextTrainingTypeId": 3,
+  "nextUserId": 7
+}
