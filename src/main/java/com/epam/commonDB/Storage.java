@@ -1,12 +1,10 @@
 package com.epam.commonDB;
 
-import com.epam.entity.AbstractEntity;
 import com.epam.entity.Trainee;
 import com.epam.entity.Trainer;
 import com.epam.entity.Training;
 import com.epam.entity.TrainingType;
 import com.epam.entity.User;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;

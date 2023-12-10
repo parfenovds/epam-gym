@@ -11,13 +11,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import lombok.extern.log4j.Log4j2;
+import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
-import org.reflections.Reflections;
 
 @Component
 @Log4j2
