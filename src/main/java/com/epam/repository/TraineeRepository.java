@@ -12,6 +12,7 @@ public class TraineeRepository implements BaseRepository<Trainee> {
 
   private final Storage storage;
   private final TrainingRepository trainingRepository;
+  private final UserRepository userRepository;
 
   public Collection<Trainee> getAll() {
     return storage.getTrainees().values();
@@ -26,6 +27,12 @@ public class TraineeRepository implements BaseRepository<Trainee> {
 
   @Override
   public Trainee create(Trainee entity) {
+    if(entity.getUser() == null) {
+      throw new IllegalArgumentException("Trainee must have user");
+    }
+    if(entity.getUser().getId() == null) {
+      entity.setUser(userRepository.create(entity.getUser()));
+    }
     entity.setId(storage.getNextTraineeId().getAndIncrement());
     return update(entity);
   }
