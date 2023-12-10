@@ -14,6 +14,6 @@ import lombok.NoArgsConstructor;
 public class Trainer implements AbstractEntity {
   private Long id;
   private Long trainingTypeId;
-  private Long userId;
+  private User user;
   private Collection<Training> trainings = new ArrayList<>();
 }

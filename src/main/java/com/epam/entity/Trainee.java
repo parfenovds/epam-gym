@@ -16,6 +16,6 @@ public class Trainee implements AbstractEntity {
   private Long id;
   private LocalDate dateOfBirth;
   private String address;
-  private Long userId;
+  private User user;
   private Collection<Training> trainings = new ArrayList<>();
 }
