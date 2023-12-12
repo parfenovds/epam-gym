@@ -41,17 +41,14 @@ class UserRepositoryTest {
 
   @Test
   void testGetExistingUser() {
-    // Arrange
     Long userId = 1L;
     User testUser = new User();
     testUser.setId(userId);
 
     when(storage.getUsers()).thenReturn(Collections.singletonMap(userId, testUser));
 
-    // Act
     User retrievedUser = userRepository.get(userId);
 
-    // Assert
     assertNotNull(retrievedUser);
     assertEquals(userId, retrievedUser.getId());
     verify(storage).getUsers();
@@ -59,22 +56,18 @@ class UserRepositoryTest {
 
   @Test
   void testGetNonExistingUser() {
-    // Arrange
     Long userId = 1L;
 
     when(storage.getUsers()).thenReturn(new HashMap<>());
 
-    // Act
     User retrievedUser = userRepository.get(userId);
 
-    // Assert
     assertNull(retrievedUser);
     verify(storage).getUsers();
   }
 
   @Test
   void testCreateUser() {
-    // Arrange
     User testUser = new User();
     testUser.setFirstName("John");
     testUser.setLastName("Doe");
@@ -83,10 +76,8 @@ class UserRepositoryTest {
     when(storage.getUsers()).thenReturn(usersMap);
     when(storage.getNextUserId()).thenReturn(new AtomicLong(1L));
 
-    // Act
     User createdUser = userRepository.create(testUser);
 
-    // Assert
     assertNotNull(createdUser);
     assertEquals(1, usersMap.size());
     assertTrue(usersMap.containsKey(createdUser.getId()));
@@ -125,8 +116,6 @@ class UserRepositoryTest {
     }
   }
 
-  // Примеры для других приватных методов...
-
   @Test
   void testSetUsernameForUser_NoDuplicates() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
     User user = new User();
@@ -136,7 +125,6 @@ class UserRepositoryTest {
     Method method = UserRepository.class.getDeclaredMethod("setUsernameForUser", User.class);
     method.setAccessible(true);
 
-    // Мокирование метода getCurrentSerialNumberForDuplicateUsername
     when(storage.getUsers()).thenReturn(new HashMap<>());
 
     method.invoke(userRepository, user);
@@ -150,7 +138,6 @@ class UserRepositoryTest {
     user.setFirstName("John");
     user.setLastName("Doe");
 
-    // Подготовка мок-данных для Trainee
     Map<Long, Trainee> trainees = new HashMap<>();
     Trainee trainee1 = new Trainee();
     User existingUser1 = new User();
@@ -168,10 +155,8 @@ class UserRepositoryTest {
     trainee2.setUser(existingUser2);
     trainees.put(2L, trainee2);
 
-    // Мокирование метода getTrainees()
     when(storage.getTrainees()).thenReturn(trainees);
 
-    // Подготовка мок-данных для Trainer
     Map<Long, Trainer> trainers = new HashMap<>();
     Trainer trainer1 = new Trainer();
     User existingUser3 = new User();
@@ -189,7 +174,6 @@ class UserRepositoryTest {
     trainer2.setUser(existingUser4);
     trainers.put(2L, trainer2);
 
-    // Мокирование метода getTrainers()
     when(storage.getTrainers()).thenReturn(trainers);
 
     Method method = UserRepository.class.getDeclaredMethod("getCurrentSerialNumberForDuplicateUsername", User.class);
@@ -198,7 +182,4 @@ class UserRepositoryTest {
     Optional<Integer> serialNumber = (Optional<Integer>) method.invoke(userRepository, user);
     assertEquals(4, serialNumber.orElse(-1));
   }
-
-
-  // Тесты для других методов класса UserRepository...
 }

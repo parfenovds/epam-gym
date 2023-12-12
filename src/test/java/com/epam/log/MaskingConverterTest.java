@@ -14,11 +14,9 @@ class MaskingConverterTest {
 
   @Test
   void testFormatLogs() {
-    // Подготовка
     Configurator.setLevel("com.your.package", Level.INFO);
     Logger logger = (Logger) org.apache.logging.log4j.LogManager.getLogger("com.your.package");
 
-    // Создание LogEvent
     LogEvent logEvent = Log4jLogEvent.newBuilder()
         .setLoggerName("com.your.package")
         .setLoggerFqcn(logger.getClass().getName())
@@ -26,16 +24,11 @@ class MaskingConverterTest {
         .setMessage(new SimpleMessage("Email: test@example.com, password=pass123"))
         .build();
 
-    // Создание MaskingConverter
     MaskingConverter converter = new MaskingConverter(List.of(new EmailMasker(), new PasswordMasker()));
     StringBuilder output = new StringBuilder();
 
-    // Применение конвертера к LogEvent
     converter.format(logEvent, output);
 
-    // Проверка результата
     assertEquals("Email: t**t@e*****e.com, password: ******", output.toString());
   }
-
-  // Другие тесты
 }
