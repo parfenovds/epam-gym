@@ -39,9 +39,9 @@ public class TrainerRepository implements BaseRepository<Trainer> {
     entity.setId(storage.getNextTrainerId().getAndIncrement());
     createTrainings(entity);
     entity.setTrainings(trainingRepository.getTrainingsByField(entity.getId(), Training::getTrainerId));
-    Trainer trainer = storage.getTrainers().put(entity.getId(), entity);
-    log.info("Trainer created in repository: {}", trainer);
-    return trainer;
+    storage.getTrainers().put(entity.getId(), entity);
+    log.info("Trainer created in repository: {}", entity);
+    return entity;
   }
 
   private void createTrainings(Trainer entity) {
@@ -59,15 +59,15 @@ public class TrainerRepository implements BaseRepository<Trainer> {
   }
 
   private void setUserIfNull(Trainer entity) {
-    if (entity.getUser().getId() == null) {
+    if (entity.getUser() == null) {
       entity.setUser(userRepository.create(entity.getUser()));
     }
   }
 
   public Trainer update(Trainer entity) {
-    Trainer trainer = storage.getTrainers().put(entity.getId(), entity);
-    log.info("Trainer updated in repository: {}", trainer);
-    trainingRepository.updateTrainings(trainer.getId(), Training::getTrainerId, trainer.getTrainings());
-    return trainer;
+    storage.getTrainers().put(entity.getId(), entity);
+    log.info("Trainer updated in repository: {}", entity);
+    trainingRepository.updateTrainings(entity.getId(), Training::getTrainerId, entity.getTrainings());
+    return entity;
   }
 }

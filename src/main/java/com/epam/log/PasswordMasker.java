@@ -12,7 +12,6 @@ public class PasswordMasker implements LogMasker {
     StringBuilder result = new StringBuilder();
 
     while (matcher.find()) {
-      String password = matcher.group(1);
       matcher.appendReplacement(result, "password: ******");
     }
 

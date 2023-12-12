@@ -2,7 +2,7 @@
 <Configuration status="warn" name="MyApp" packages="">
     <Appenders>
         <RollingFile name="RollingFile" fileName="logs/epam-gym.log"
-                     filePattern="logs/hippodrome.%d{yyyy-MM-dd}.log">
+                     filePattern="logs/epam-gym.%d{yyyy-MM-dd}.log">
             <PatternLayout>
                 <Pattern>%d{HH:mm:ss.SSS} [%t] %-5level - %msk{email}{pass}%n</Pattern>
             </PatternLayout>

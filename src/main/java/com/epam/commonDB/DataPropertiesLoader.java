@@ -34,7 +34,7 @@ public class DataPropertiesLoader implements BeanPostProcessor {
   public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
     if (beanName.equals(STORAGE_BEAN_NAME)) {
       log.info("Processing bean: {}", beanName);
-      List<String> classNamesInOrderToLoad = getCorrectFillOrderForMaps((Storage) bean);
+      List<String> classNamesInOrderToLoad = getCorrectFillOrderForMaps();
       log.info("Correct fill order for maps is acquired: {}", classNamesInOrderToLoad);
       fillStorage((Storage) bean, classNamesInOrderToLoad);
       log.info("Storage is filled with data.");
@@ -42,7 +42,7 @@ public class DataPropertiesLoader implements BeanPostProcessor {
     return bean;
   }
 
-  private List<String> getCorrectFillOrderForMaps(Storage bean) {
+  private List<String> getCorrectFillOrderForMaps() {
     Reflections reflections = new Reflections(PATH_TO_ENTITIES, new SubTypesScanner(false));
     List<Class<?>> classes = getClassesToOrder(reflections);
     log.info("Classes to be ordered are acquired: {}", classes);

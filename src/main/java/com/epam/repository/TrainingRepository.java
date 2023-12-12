@@ -57,9 +57,9 @@ public class TrainingRepository implements BaseRepository<Training> {
   }
 
   public Training update(Training entity) {
-    Training training = storage.getTrainings().put(entity.getId(), entity);
-    log.info("Training updated in repository: {}", training);
-    return training;
+    storage.getTrainings().put(entity.getId(), entity);
+    log.info("Training updated in repository: {}", entity);
+    return entity;
   }
   public void delete(Long id) {
     storage.getTrainings().remove(id);

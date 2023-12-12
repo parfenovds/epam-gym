@@ -1,8 +1,13 @@
 package com.epam.repository;
 
 import com.epam.commonDB.Storage;
+import com.epam.entity.Trainee;
+import com.epam.entity.Trainer;
 import com.epam.entity.User;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -27,9 +32,11 @@ public class UserRepository implements BaseRepository<User> {
     checkIfUserHasFirstnameAndLastname(entity);
     setUsernameForUser(entity);
     setPasswordForUser(entity);
-    User user = storage.getUsers().put(storage.getNextUserId().getAndIncrement(), entity);
-    log.info("User created in repository: {}", user);
-    return user;
+    long id = storage.getNextUserId().getAndIncrement();
+    entity.setId(id);
+    storage.getUsers().put(id, entity);
+    log.info("User created in repository: {}", entity);
+    return entity;
   }
 
   private static void setPasswordForUser(User entity) {
@@ -53,12 +60,22 @@ public class UserRepository implements BaseRepository<User> {
   }
 
   private Optional<Integer> getCurrentSerialNumberForDuplicateUsername(User entity) {
-    Optional<Integer> currentSerialNumber = Stream.concat(storage.getTrainees().values().stream(), storage.getTrainees().values().stream())
-        .filter(u -> u.getUser().getFirstName().equals(entity.getFirstName()) && u.getUser().getLastName().equals(entity.getLastName()))
-        .map(u -> u.getUser().getUsername())
-        .map(s -> s.replaceAll("^.*?(\\d+)$", "$1"))
-        .map(Integer::parseInt)
+    Stream<User> usersFromTrainees = storage.getTrainees().values().stream()
+        .map(Trainee::getUser);
+
+    Stream<User> usersFromTrainers = storage.getTrainers().values().stream()
+        .map(Trainer::getUser);
+
+    Optional<Integer> currentSerialNumber = Stream.concat(usersFromTrainees, usersFromTrainers)
+        .filter(u -> u.getFirstName().equals(entity.getFirstName()) && u.getLastName().equals(entity.getLastName()))
+        .map(User::getUsername)
+        .map(s -> {
+          Matcher matcher = Pattern.compile("\\d+$").matcher(s);
+          return matcher.find() ? Integer.parseInt(matcher.group()) : null;
+        })
+        .filter(Objects::nonNull)
         .max(Integer::compareTo);
+
     log.info("Current serial number for duplicate username (if exists, otherwise null): {}", currentSerialNumber.orElse(null));
     return currentSerialNumber;
   }

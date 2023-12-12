@@ -25,27 +25,4 @@ public class Storage {
   private Map<Long, Training> trainings = new HashMap<>();
   private Map<Long, TrainingType> trainingTypes = new HashMap<>();
   private Map<Long, User> users = new HashMap<>();
-
-//  public <T> Map<Long, T> getMapByClass(Class<? extends AbstractEntity> clazz) {
-//    try {
-//      return (Map<Long, T>) clazz.getMethod("get" + clazz.getSimpleName() + "s").invoke(this);
-//    } catch (IllegalAccessException e) {
-//      throw new RuntimeException(e);
-//    } catch (InvocationTargetException e) {
-//      throw new RuntimeException(e);
-//    } catch (NoSuchMethodException e) {
-//      throw new RuntimeException(e);
-//    }
-//  }
-//  public AtomicLong getAtomicLongByClass(Class<? extends AbstractEntity> clazz) {
-//    try {
-//      return (AtomicLong) clazz.getMethod("getNext" + clazz.getSimpleName() + "Id").invoke(this);
-//    } catch (IllegalAccessException e) {
-//      throw new RuntimeException(e);
-//    } catch (InvocationTargetException e) {
-//      throw new RuntimeException(e);
-//    } catch (NoSuchMethodException e) {
-//      throw new RuntimeException(e);
-//    }
-//  }
 }

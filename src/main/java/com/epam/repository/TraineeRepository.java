@@ -36,12 +36,17 @@ public class TraineeRepository implements BaseRepository<Trainee> {
   public Trainee create(Trainee entity) {
     validateEntity(entity);
     setUserIfNull(entity);
+    saveUserIfNoId(entity);
     entity.setId(storage.getNextTraineeId().getAndIncrement());
     createTrainings(entity);
     entity.setTrainings(trainingRepository.getTrainingsByField(entity.getId(), Training::getTraineeId));
-    Trainee trainee = storage.getTrainees().put(entity.getId(), entity);
-    log.info("Trainee created in repository: {}", trainee);
-    return trainee;
+    storage.getTrainees().put(entity.getId(), entity);
+    log.info("Trainee created in repository: {}", entity);
+    return entity;
+  }
+
+  private void saveUserIfNoId(Trainee entity) {
+    entity.setUser(userRepository.create(entity.getUser()));
   }
 
   private void createTrainings(Trainee entity) {
@@ -59,16 +64,16 @@ public class TraineeRepository implements BaseRepository<Trainee> {
   }
 
   private void setUserIfNull(Trainee entity) {
-    if (entity.getUser().getId() == null) {
+    if (entity.getUser() == null) {
       entity.setUser(userRepository.create(entity.getUser()));
     }
   }
 
   public Trainee update(Trainee entity) {
-    Trainee trainee = storage.getTrainees().put(entity.getId(), entity);
-    log.info("Trainee updated in repository: {}", trainee);
-    trainingRepository.updateTrainings(trainee.getId(), Training::getTraineeId, trainee.getTrainings());
-    return trainee;
+    storage.getTrainees().put(entity.getId(), entity);
+    log.info("Trainee updated in repository: {}", entity);
+    trainingRepository.updateTrainings(entity.getId(), Training::getTraineeId, entity.getTrainings());
+    return entity;
   }
 
   public void delete(Long id) {
