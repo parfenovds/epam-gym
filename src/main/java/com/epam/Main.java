@@ -1,6 +1,7 @@
 package com.epam;
 
 import com.epam.entity.Trainee;
+import com.epam.entity.Trainer;
 import com.epam.entity.User;
 import com.epam.service.FacadeService;
 import java.time.LocalDate;
@@ -12,7 +13,7 @@ public class Main {
   public static void main(String[] args) {
     ApplicationContext context = new AnnotationConfigApplicationContext("com.epam");
     FacadeService facadeService = context.getBean("facadeService", FacadeService.class);
-    Trainee traineeById = facadeService.findTraineeById(1L);
+//    Trainee traineeById = facadeService.findTraineeById(1L);
 
     User user = User.builder()
         .firstName("John")
@@ -21,53 +22,48 @@ public class Main {
         .password("passwordWOW")
         .isActive(true)
         .build();
-    Trainee traineeToCreate = Trainee.builder()
+    Trainee trainee1ToCreate = Trainee.builder()
         .dateOfBirth(LocalDate.of(1995, 3, 20))
         .address("456 Oak St")
         .user(user)
         .trainings(new ArrayList<>())
         .build();
-    Trainee trainee = facadeService.saveTrainee(traineeToCreate);
-    System.out.println(trainee);
+    Trainee trainee1 = facadeService.saveTrainee(trainee1ToCreate);
+    System.out.println(trainee1);
 
-    System.out.println(traineeById);
-
-    User user2 = User.builder()
+    User user1 = User.builder()
         .firstName("John")
         .lastName("Doe")
         .username("johndoe")
         .password("passwordWOW")
         .isActive(true)
         .build();
-    Trainee traineeToCreate2 = Trainee.builder()
-        .dateOfBirth(LocalDate.of(1995, 3, 20))
-        .address("456 Oak St")
-        .user(user2)
+    Trainer trainer11ToCreate = Trainer.builder()
+        .trainingTypeId(2L)
+        .user(user1)
         .trainings(new ArrayList<>())
         .build();
-//    Storage storage = context.getBean("storage", Storage.class);
-//    System.out.println(storage);
-//    TraineeRepository traineeRepository = context.getBean("traineeRepository", TraineeRepository.class);
-//    Trainee trainee = traineeRepository.get(1L);
-//    TraineeService traineeService = context.getBean("traineeService", TraineeService.class);
-//    Trainee byId = traineeService.findById(1L);
-//    System.out.println(trainee);
-//    System.out.println(byId);
-//    User user = User.builder()
-//        .firstName("John")
-//        .lastName("Doe")
-//        .username("johndoe")
-//        .password("password")
-//        .isActive(true)
-//        .build();
-//    // Создаем объект Trainee для создания
-//    Trainee traineeToCreate = Trainee.builder()
-//        .dateOfBirth(LocalDate.of(1995, 3, 20))
-//        .address("456 Oak St")
-//        .user(user)
-//        .trainings(new ArrayList<>())
-//        .build();
-//    Trainee save = traineeService.save(traineeToCreate);
-//    System.out.println(save);
+    Trainer trainer11 = facadeService.saveTrainer(trainer11ToCreate);
+    System.out.println(trainer11);
+
+    User user3 = User.builder()
+        .firstName("John")
+        .lastName("Doe")
+        .username("johndoe")
+        .password("passwordWOW")
+        .isActive(true)
+        .build();
+    Trainer trainer12ToCreate = Trainer.builder()
+        .trainingTypeId(2L)
+        .user(user3)
+        .trainings(new ArrayList<>())
+        .build();
+    Trainer trainer12 = facadeService.saveTrainer(trainer12ToCreate);
+    System.out.println(trainer12);
+
+//    Trainer trainer1 = facadeService.updateTrainer(trainerToUpdate);
+//    System.out.println(trainer1);
+
+
   }
 }

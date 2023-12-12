@@ -36,7 +36,7 @@ public class TraineeRepository implements BaseRepository<Trainee> {
   public Trainee create(Trainee entity) {
     validateEntity(entity);
     setUserIfNull(entity);
-    saveUserIfNoId(entity);
+//    saveUserIfNoId(entity);
     entity.setId(storage.getNextTraineeId().getAndIncrement());
     createTrainings(entity);
     entity.setTrainings(trainingRepository.getTrainingsByField(entity.getId(), Training::getTraineeId));

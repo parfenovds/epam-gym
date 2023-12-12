@@ -1,7 +1,9 @@
 package com.epam.service;
 
 import com.epam.entity.Trainee;
+import com.epam.entity.User;
 import com.epam.repository.TraineeRepository;
+import java.util.Collection;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,14 @@ import org.springframework.stereotype.Service;
 public class TraineeService implements BaseService<Trainee> {
 
   private final TraineeRepository traineeRepository;
+  private final UserService userService;
+
+  public Collection<Trainee> findAll() {
+    Collection<Trainee> trainees = traineeRepository.getAll();
+    log.info("Trainees acquired from service: " + trainees);
+    return trainees;
+  }
+
   @Override
   public Trainee findById(Long id) {
     Trainee trainee = traineeRepository.get(id);
@@ -21,6 +31,8 @@ public class TraineeService implements BaseService<Trainee> {
 
   @Override
   public Trainee save(Trainee entity) {
+    User user = userService.save(entity.getUser());
+    entity.setUser(user);
     Trainee trainee = traineeRepository.create(entity);
     log.info("Trainee saved in service: " + trainee);
     return trainee;
