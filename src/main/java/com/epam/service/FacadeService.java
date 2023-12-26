@@ -3,6 +3,9 @@ package com.epam.service;
 import com.epam.entity.Trainee;
 import com.epam.entity.Trainer;
 import com.epam.entity.Training;
+import com.epam.entity.User;
+import java.util.Collection;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +16,7 @@ public class FacadeService {
   private final TraineeService traineeService;
   private final TrainerService trainerService;
   private final TrainingService trainingService;
+  private final UserService userService;
 
   public Trainee findTraineeById(Long id) {
     return traineeService.findById(id);
@@ -48,5 +52,34 @@ public class FacadeService {
 
   public Training saveTraining(Training training) {
     return trainingService.save(training);
+  }
+
+  public Collection<User> findAllUsers() {
+    return userService.findAll();
+  }
+
+  public Collection<Trainee> findAllTrainees() {
+    return traineeService.findAll();
+  }
+
+  public List<Trainer> listOfNotAssignedToTrainee(Long traineeId) {
+    return trainerService.listOfNotAssignedToTrainee(traineeId);
+  }
+  public Boolean usernameToPasswordMatchingCheck(String username, String password) {
+    return userService.usernameToPasswordMatchingCheck(username, password);
+  }
+
+  public List<Training> trainingsByUsernameOfTraineeAndCriteria(String username, String trainingTypeProperty, String trainingTypeValue) {
+    return traineeService.trainingsByUsernameAndCriteria(username, trainingTypeProperty, trainingTypeValue);
+  }
+
+  public List<Training> trainingsByUsernameOfTrainerAndCriteria(String username, String trainingTypeProperty, String trainingTypeValue) {
+    return trainerService.trainingsByUsernameAndCriteria(username, trainingTypeProperty, trainingTypeValue);
+  }
+  public Trainee toggleActivationNonIdempotent(Long id) {
+    return traineeService.toggleActivationNonIdempotent(id);
+  }
+  public Trainer toggleActivationNonIdempotentTrainer(Long id) {
+    return trainerService.toggleActivationNonIdempotent(id);
   }
 }
