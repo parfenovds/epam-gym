@@ -1,41 +1,43 @@
 package com.epam.repository;
 
-import com.epam.commonDB.Storage;
 import com.epam.entity.Trainer;
-import com.epam.entity.Training;
 import com.epam.entity.User;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
-class TrainerRepositoryTest {
-  @Mock
-  private Storage storage;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
+
+public class TrainerRepositoryTest {
 
   @Mock
-  private TrainingRepository trainingRepository;
+  private SessionFactory sessionFactory;
 
   @Mock
-  private UserRepository userRepository;
+  private Session session;
+
+  @Mock
+  private Query<Trainer> query;
 
   @InjectMocks
   private TrainerRepository trainerRepository;
@@ -43,196 +45,137 @@ class TrainerRepositoryTest {
   @BeforeEach
   void setUp() {
     MockitoAnnotations.initMocks(this);
-    when(storage.getNextTrainerId()).thenReturn(new AtomicLong(1L));
-    when(storage.getTrainers()).thenReturn(new HashMap<>());
   }
 
   @Test
-  public void testGet() {
-    User user = User.builder()
-        .id(1L)
-        .firstName("John")
-        .lastName("Doe")
-        .username("johndoe")
-        .password("password")
-        .isActive(true)
-        .build();
+  void testGetByUsername() {
+    String username = "testUsername";
+    Trainer expectedTrainer = new Trainer();
 
-    Trainer trainer = Trainer.builder()
-        .id(1L)
-        .trainingTypeId(2L)
-        .user(user)
-        .trainings(new ArrayList<>())
-        .build();
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    Query<Trainer> mockQuery = mock(Query.class);
+    when(session.createQuery(anyString(), eq(Trainer.class))).thenReturn(mockQuery);
+    when(mockQuery.setParameter("username", username)).thenReturn(mockQuery);
+    when(mockQuery.uniqueResultOptional()).thenReturn(Optional.of(expectedTrainer));
 
-    Map<Long, Trainer> trainerMap = new HashMap<>();
-    trainerMap.put(trainer.getId(), trainer);
-    when(storage.getTrainers()).thenReturn(trainerMap);
+    Optional<Trainer> result = trainerRepository.getByUsername(username);
 
-    Trainer retrievedTrainer = trainerRepository.get(trainer.getId());
+    assertTrue(result.isPresent());
+    assertEquals(expectedTrainer, result.get());
 
-    assertEquals(trainer.getId(), retrievedTrainer.getId());
-    assertEquals(trainer.getTrainingTypeId(), retrievedTrainer.getTrainingTypeId());
-    assertEquals(trainer.getUser(), retrievedTrainer.getUser());
-    assertEquals(trainer.getTrainings(), retrievedTrainer.getTrainings());
-  }
-  @Test
-  public void testCreateTrainer() {
-    User user = User.builder()
-        .id(1L)
-        .firstName("John")
-        .lastName("Doe")
-        .username("johndoe")
-        .password("password")
-        .isActive(true)
-        .build();
-    Trainer trainerToCreate = Trainer.builder()
-        .trainingTypeId(2L)
-        .user(user)
-        .trainings(new ArrayList<>())
-        .build();
-
-    when(userRepository.create(any(User.class))).thenReturn(trainerToCreate.getUser());
-
-    Trainer createdTrainer = trainerRepository.create(trainerToCreate);
-
-    assertNotNull(createdTrainer);
-    assertEquals(trainerToCreate.getTrainingTypeId(), createdTrainer.getTrainingTypeId());
-  }
-
-
-  @Test
-  public void testUpdate() {
-    Trainer existingTrainer = Trainer.builder()
-        .id(1L)
-        .trainingTypeId(2L)
-        .user(User.builder().id(1L).build())
-        .trainings(new ArrayList<>())
-        .build();
-
-    Map<Long, Trainer> trainersMap = new HashMap<>();
-    trainersMap.put(existingTrainer.getId(), existingTrainer);
-
-    when(storage.getTrainers()).thenReturn(trainersMap);
-
-    Trainer updatedTrainer = Trainer.builder()
-        .id(existingTrainer.getId())
-        .trainingTypeId(3L)
-        .user(User.builder().id(1L).build())
-        .trainings(new ArrayList<>())
-        .build();
-
-    Trainer result = trainerRepository.update(updatedTrainer);
-
-    assertEquals(updatedTrainer.getId(), result.getId());
-    assertEquals(updatedTrainer.getTrainingTypeId(), result.getTrainingTypeId());
-    assertEquals(updatedTrainer.getUser(), result.getUser());
-    assertEquals(updatedTrainer.getTrainings(), result.getTrainings());
+    verify(sessionFactory).getCurrentSession();
+    verify(session).createQuery(anyString(), eq(Trainer.class));
+    verify(mockQuery).setParameter("username", username);
+    verify(mockQuery).uniqueResultOptional();
   }
 
   @Test
-  public void testGetAll() {
-    Map<Long, Trainer> trainers = new HashMap<>();
-    trainers.put(1L, new Trainer());
-    trainers.put(2L, new Trainer());
-    when(storage.getTrainers()).thenReturn(trainers);
+  public void testChangePassword() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    Long id = 1L;
+    String password = "newPassword";
+    Trainer trainer = new Trainer();
+    trainer.setId(id);
+    trainer.setUser(new User());
 
-    Collection<Trainer> allTrainers = trainerRepository.getAll();
+    Method toggleActivation = EntityWithUserRepository.class.getDeclaredMethod("toggleActivation", Long.class, Boolean.class);
+    toggleActivation.setAccessible(true);
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.merge(any())).thenReturn(trainer);
+    when(session.get(eq(Trainer.class), anyLong())).thenReturn(trainer);
 
-    assertEquals(2, allTrainers.size()); // Проверка размера коллекции
+    Trainer updatedTrainer = trainerRepository.changePassword(id, password);
+
+    assertEquals(password, updatedTrainer.getUser().getPassword());
+    verify(sessionFactory, times(2)).getCurrentSession();
+    verify(session).merge(any());
+    verify(session).get(eq(Trainer.class), anyLong());
   }
 
   @Test
-  public void testCreateTrainings() throws Exception {
-    Trainer trainer = Trainer.builder()
-        .id(1L)
-        .trainingTypeId(2L)
-        .user(User.builder().id(1L).build())
-        .trainings(new ArrayList<>())
-        .build();
+  public void testActivate() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    Long id = 1L;
+    Trainer trainer = new Trainer();
+    trainer.setId(id);
+    trainer.setUser(new User());
 
-    Training training1 = Training.builder()
-        .id(1L)
-        .trainerId(trainer.getId())
-        .trainerId(2L)
-        .trainingName("Training 1")
-        .trainingTypeId(3L)
-        .trainingDate(LocalDate.now())
-        .trainingDuration(60L)
-        .build();
+    Method toggleActivation = EntityWithUserRepository.class.getDeclaredMethod("toggleActivation", Long.class, Boolean.class);
+    toggleActivation.setAccessible(true);
 
-    Training training2 = Training.builder()
-        .id(2L)
-        .trainerId(trainer.getId())
-        .trainerId(3L)
-        .trainingName("Training 2")
-        .trainingTypeId(4L)
-        .trainingDate(LocalDate.now())
-        .trainingDuration(45L)
-        .build();
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.merge(any())).thenReturn(trainer);
+    when(session.get(eq(Trainer.class), anyLong())).thenReturn(trainer);
 
-    trainer.getTrainings().add(training1);
-    trainer.getTrainings().add(training2);
+    Trainer activatedTrainer = trainerRepository.activate(id);
 
-    Method createTrainingsMethod = TrainerRepository.class.getDeclaredMethod("createTrainings", Trainer.class);
-    createTrainingsMethod.setAccessible(true);
+    assertEquals(true, activatedTrainer.getUser().getIsActive());
 
-    TrainingRepository trainingRepository = mock(TrainingRepository.class);
-
-    UserRepository userRepository = mock(UserRepository.class);
-    when(userRepository.create(any())).thenReturn(User.builder().id(1L).build());
-
-    TrainerRepository trainerRepository = new TrainerRepository(storage, trainingRepository, userRepository);
-
-    createTrainingsMethod.invoke(trainerRepository, trainer);
-
-    verify(trainingRepository).create(training1);
-    verify(trainingRepository).create(training2);
+    verify(sessionFactory, times(2)).getCurrentSession();
+    verify(session).merge(any());
   }
 
   @Test
-  public void testValidateEntity() throws Exception {
-    TrainerRepository trainerRepository = new TrainerRepository(storage, trainingRepository, userRepository);
+  public void testDeactivate() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    Long id = 1L;
+    Trainer trainer = new Trainer();
+    trainer.setId(id);
+    trainer.setUser(new User());
 
-    Method validateEntityMethod = TrainerRepository.class.getDeclaredMethod("validateEntity", Trainer.class);
-    validateEntityMethod.setAccessible(true);
+    Method toggleActivation = EntityWithUserRepository.class.getDeclaredMethod("toggleActivation", Long.class, Boolean.class);
+    toggleActivation.setAccessible(true);
 
-    Trainer trainer = Trainer.builder()
-        .id(1L)
-        .trainingTypeId(2L)
-        .trainings(new ArrayList<>())
-        .build();
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.merge(any())).thenReturn(trainer);
+    when(session.get(eq(Trainer.class), anyLong())).thenReturn(trainer);
 
-    try {
-      validateEntityMethod.invoke(trainerRepository, trainer);
-      fail("Expected IllegalArgumentException was not thrown");
-    } catch (InvocationTargetException e) {
-      assertTrue(e.getCause() instanceof IllegalArgumentException);
-      assertEquals("Trainer must have a user", e.getCause().getMessage());
-    }
+    Trainer deactivatedTrainer = trainerRepository.deactivate(id);
+
+    assertEquals(false, deactivatedTrainer.getUser().getIsActive());
+
+    verify(sessionFactory, times(2)).getCurrentSession();
+    verify(session).merge(any());
   }
 
   @Test
-  public void testSetUserIfNull() throws Exception {
-    TrainerRepository trainerRepository = new TrainerRepository(storage, trainingRepository, userRepository);
+  public void testToggleActivationNonIdempotent() throws NoSuchMethodException {
+    Long id = 1L;
+    Trainer trainer = new Trainer();
+    User user = new User();
+    user.setIsActive(false);
+    trainer.setId(id);
+    trainer.setUser(user);
 
-    Method setUserIfNullMethod = TrainerRepository.class.getDeclaredMethod("setUserIfNull", Trainer.class);
-    setUserIfNullMethod.setAccessible(true);
+    Method toggleActivation = EntityWithUserRepository.class.getDeclaredMethod("toggleActivation", Long.class, Boolean.class);
+    toggleActivation.setAccessible(true);
 
-    Trainer trainer = Trainer.builder()
-        .id(1L)
-        .trainingTypeId(2L)
-        .trainings(new ArrayList<>())
-        .build();
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.merge(any())).thenReturn(trainer);
+    when(session.get(eq(Trainer.class), anyLong())).thenReturn(trainer);
 
-    UserRepository mockedUserRepository = mock(UserRepository.class);
+    Trainer toggledTrainer = trainerRepository.toggleActivationNonIdempotent(id);
 
-    Field userRepositoryField = TrainerRepository.class.getDeclaredField("userRepository");
-    userRepositoryField.setAccessible(true);
-    userRepositoryField.set(trainerRepository, mockedUserRepository);
+    assertTrue(toggledTrainer.getUser().getIsActive());
 
-    setUserIfNullMethod.invoke(trainerRepository, trainer);
+    verify(sessionFactory, times(2)).getCurrentSession();
+    verify(session).merge(any());
+  }
 
-    verify(mockedUserRepository).create(null);
+  @Test
+  public void testListOfNotAssignedToTrainee() {
+    Long traineeId = 1L;
+    List<Trainer> expectedTrainers = Collections.singletonList(new Trainer());
+
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.createQuery(anyString(), eq(Trainer.class))).thenReturn(query);
+    when(query.setParameter("traineeId", traineeId)).thenReturn(query);
+    when(query.getResultList()).thenReturn(expectedTrainers);
+
+    List<Trainer> trainers = trainerRepository.listOfNotAssignedToTrainee(traineeId);
+
+    assertEquals(expectedTrainers.size(), trainers.size());
+
+    verify(sessionFactory).getCurrentSession();
+    verify(session).createQuery(anyString(), eq(Trainer.class));
+    verify(query).setParameter("traineeId", traineeId);
+    verify(query).getResultList();
   }
 }
