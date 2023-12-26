@@ -1,43 +1,49 @@
 package com.epam.repository;
 
-import com.epam.commonDB.Storage;
 import com.epam.entity.Trainee;
 import com.epam.entity.Training;
 import com.epam.entity.User;
-import java.lang.reflect.Field;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.ArgumentMatchers.any;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
-public class TraineeRepositoryTest {
+class TraineeRepositoryTest {
 
   @Mock
-  private Storage storage;
+  private SessionFactory sessionFactory;
 
   @Mock
-  private TrainingRepository trainingRepository;
+  private Session session;
 
   @Mock
-  private UserRepository userRepository;
+  private Query<Trainee> query;
 
   @InjectMocks
   private TraineeRepository traineeRepository;
@@ -45,226 +51,116 @@ public class TraineeRepositoryTest {
   @BeforeEach
   void setUp() {
     MockitoAnnotations.initMocks(this);
-    when(storage.getNextTraineeId()).thenReturn(new AtomicLong(1L));
-    when(storage.getTrainees()).thenReturn(new HashMap<>());
   }
 
   @Test
-  public void testGet() {
-    User user = User.builder()
-        .id(1L)
-        .firstName("John")
-        .lastName("Doe")
-        .username("johndoe")
-        .password("password")
-        .isActive(true)
-        .build();
+  void testGetByUsername() {
+    String username = "testUsername";
+    Trainee expectedTrainee = new Trainee();
 
-    Trainee trainee = Trainee.builder()
-        .id(1L)
-        .dateOfBirth(LocalDate.of(1990, 5, 15))
-        .address("123 Main St")
-        .user(user)
-        .trainings(new ArrayList<>())
-        .build();
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    Query<Trainee> mockQuery = mock(Query.class);
+    when(session.createQuery(anyString(), eq(Trainee.class))).thenReturn(mockQuery);
+    when(mockQuery.setParameter("username", username)).thenReturn(mockQuery);
+    when(mockQuery.uniqueResultOptional()).thenReturn(Optional.of(expectedTrainee));
 
-    Map<Long, Trainee> traineeMap = new HashMap<>();
-    traineeMap.put(trainee.getId(), trainee);
-    when(storage.getTrainees()).thenReturn(traineeMap);
+    Optional<Trainee> result = traineeRepository.getByUsername(username);
 
-    Trainee retrievedTrainee = traineeRepository.get(trainee.getId());
+    assertTrue(result.isPresent());
+    assertEquals(expectedTrainee, result.get());
 
-    assertEquals(trainee.getId(), retrievedTrainee.getId());
-    assertEquals(trainee.getDateOfBirth(), retrievedTrainee.getDateOfBirth());
-    assertEquals(trainee.getAddress(), retrievedTrainee.getAddress());
-    assertEquals(trainee.getUser(), retrievedTrainee.getUser());
-    assertEquals(trainee.getTrainings(), retrievedTrainee.getTrainings());
-  }
-  @Test
-  public void testCreateTrainee() {
-    User user = User.builder()
-        .id(1L)
-        .firstName("John")
-        .lastName("Doe")
-        .username("johndoe")
-        .password("password")
-        .isActive(true)
-        .build();
-    Trainee traineeToCreate = Trainee.builder()
-        .dateOfBirth(LocalDate.of(1995, 3, 20))
-        .address("456 Oak St")
-        .user(user)
-        .trainings(new ArrayList<>())
-        .build();
-
-    when(userRepository.create(any(User.class))).thenReturn(traineeToCreate.getUser());
-
-    Trainee createdTrainee = traineeRepository.create(traineeToCreate);
-
-    assertNotNull(createdTrainee);
-    assertEquals(traineeToCreate.getDateOfBirth(), createdTrainee.getDateOfBirth());
-    assertEquals(traineeToCreate.getAddress(), createdTrainee.getAddress());
-  }
-
-
-  @Test
-  public void testUpdate() {
-    Trainee existingTrainee = Trainee.builder()
-        .id(1L)
-        .dateOfBirth(LocalDate.of(1990, 5, 15))
-        .address("123 Main St")
-        .user(User.builder().id(1L).build())
-        .trainings(new ArrayList<>())
-        .build();
-
-    Map<Long, Trainee> traineesMap = new HashMap<>();
-    traineesMap.put(existingTrainee.getId(), existingTrainee);
-
-    when(storage.getTrainees()).thenReturn(traineesMap);
-
-    Trainee updatedTrainee = Trainee.builder()
-        .id(existingTrainee.getId())
-        .dateOfBirth(LocalDate.of(1992, 10, 8))
-        .address("789 Elm St")
-        .user(User.builder().id(1L).build())
-        .trainings(new ArrayList<>())
-        .build();
-
-    Trainee result = traineeRepository.update(updatedTrainee);
-
-    assertEquals(updatedTrainee.getId(), result.getId());
-    assertEquals(updatedTrainee.getDateOfBirth(), result.getDateOfBirth());
-    assertEquals(updatedTrainee.getAddress(), result.getAddress());
-    assertEquals(updatedTrainee.getUser(), result.getUser());
-    assertEquals(updatedTrainee.getTrainings(), result.getTrainings());
+    verify(sessionFactory).getCurrentSession();
+    verify(session).createQuery(anyString(), eq(Trainee.class));
+    verify(mockQuery).setParameter("username", username);
+    verify(mockQuery).uniqueResultOptional();
   }
 
   @Test
-  public void testDelete() {
-    Storage storage = new Storage();
+  public void testChangePassword() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    Long id = 1L;
+    String password = "newPassword";
+    Trainee trainee = new Trainee();
+    trainee.setId(id);
+    trainee.setUser(new User());
 
-    Long traineeId = 1L;
-    Trainee traineeToDelete = Trainee.builder()
-        .id(traineeId)
-        .dateOfBirth(LocalDate.of(1990, 5, 15))
-        .address("123 Main St")
-        .user(User.builder().id(1L).build())
-        .trainings(new ArrayList<>())
-        .build();
+    Method toggleActivation = EntityWithUserRepository.class.getDeclaredMethod("toggleActivation", Long.class, Boolean.class);
+    toggleActivation.setAccessible(true);
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.merge(any())).thenReturn(trainee);
+    when(session.get(eq(Trainee.class), anyLong())).thenReturn(trainee);
 
-    storage.getTrainees().put(traineeToDelete.getId(), traineeToDelete);
-    storage.getNextTraineeId().set(2L); // Задаем следующее ожидаемое значение
-    TraineeRepository traineeRepository = new TraineeRepository(storage, trainingRepository, userRepository);
-    traineeRepository.delete(traineeId);
-    assertFalse(storage.getTrainees().containsKey(traineeId));
+    Trainee updatedTrainee = traineeRepository.changePassword(id, password);
+
+    assertEquals(password, updatedTrainee.getUser().getPassword());
+    verify(sessionFactory, times(2)).getCurrentSession();
+    verify(session).merge(any());
+    verify(session).get(eq(Trainee.class), anyLong());
+  }
+  @Test
+  public void testActivate() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    Long id = 1L;
+    Trainee trainee = new Trainee();
+    trainee.setId(id);
+    trainee.setUser(new User());
+
+    Method toggleActivation = EntityWithUserRepository.class.getDeclaredMethod("toggleActivation", Long.class, Boolean.class);
+    toggleActivation.setAccessible(true);
+
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.merge(any())).thenReturn(trainee);
+    when(session.get(eq(Trainee.class), anyLong())).thenReturn(trainee);
+
+    Trainee activatedTrainee = traineeRepository.activate(id);
+
+    assertEquals(true, activatedTrainee.getUser().getIsActive());
+
+    verify(sessionFactory, times(2)).getCurrentSession();
+    verify(session).merge(any());
   }
 
   @Test
-  public void testGetAll() {
-    Map<Long, Trainee> trainees = new HashMap<>();
-    trainees.put(1L, new Trainee());
-    trainees.put(2L, new Trainee());
-    when(storage.getTrainees()).thenReturn(trainees);
+  public void testDeactivate() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    Long id = 1L;
+    Trainee trainee = new Trainee();
+    trainee.setId(id);
+    trainee.setUser(new User());
 
-    Collection<Trainee> allTrainees = traineeRepository.getAll();
+    Method toggleActivation = EntityWithUserRepository.class.getDeclaredMethod("toggleActivation", Long.class, Boolean.class);
+    toggleActivation.setAccessible(true);
 
-    assertEquals(2, allTrainees.size()); // Проверка размера коллекции
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.merge(any())).thenReturn(trainee);
+    when(session.get(eq(Trainee.class), anyLong())).thenReturn(trainee);
+
+    Trainee deactivatedTrainee = traineeRepository.deactivate(id);
+
+    assertEquals(false, deactivatedTrainee.getUser().getIsActive());
+
+    verify(sessionFactory, times(2)).getCurrentSession();
+    verify(session).merge(any());
   }
 
   @Test
-  public void testCreateTrainings() throws Exception {
-    Trainee trainee = Trainee.builder()
-        .id(1L)
-        .dateOfBirth(LocalDate.of(1990, 5, 15))
-        .address("123 Main St")
-        .user(User.builder().id(1L).build())
-        .trainings(new ArrayList<>())
-        .build();
+  public void testToggleActivationNonIdempotent() throws NoSuchMethodException {
+    Long id = 1L;
+    Trainee trainee = new Trainee();
+    User user = new User();
+    user.setIsActive(false);
+    trainee.setId(id);
+    trainee.setUser(user);
 
-    Training training1 = Training.builder()
-        .id(1L)
-        .traineeId(trainee.getId())
-        .trainerId(2L)
-        .trainingName("Training 1")
-        .trainingTypeId(3L)
-        .trainingDate(LocalDate.now())
-        .trainingDuration(60L)
-        .build();
+    Method toggleActivation = EntityWithUserRepository.class.getDeclaredMethod("toggleActivation", Long.class, Boolean.class);
+    toggleActivation.setAccessible(true);
 
-    Training training2 = Training.builder()
-        .id(2L)
-        .traineeId(trainee.getId())
-        .trainerId(3L)
-        .trainingName("Training 2")
-        .trainingTypeId(4L)
-        .trainingDate(LocalDate.now())
-        .trainingDuration(45L)
-        .build();
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.merge(any())).thenReturn(trainee);
+    when(session.get(eq(Trainee.class), anyLong())).thenReturn(trainee);
 
-    trainee.getTrainings().add(training1);
-    trainee.getTrainings().add(training2);
+    Trainee toggledTrainee = traineeRepository.toggleActivationNonIdempotent(id);
 
-    Method createTrainingsMethod = TraineeRepository.class.getDeclaredMethod("createTrainings", Trainee.class);
-    createTrainingsMethod.setAccessible(true);
+    assertTrue(toggledTrainee.getUser().getIsActive());
 
-    TrainingRepository trainingRepository = mock(TrainingRepository.class);
-
-    UserRepository userRepository = mock(UserRepository.class);
-    when(userRepository.create(any())).thenReturn(User.builder().id(1L).build());
-
-    TraineeRepository traineeRepository = new TraineeRepository(storage, trainingRepository, userRepository);
-
-    createTrainingsMethod.invoke(traineeRepository, trainee);
-
-    verify(trainingRepository).create(training1);
-    verify(trainingRepository).create(training2);
-  }
-
-  @Test
-  public void testValidateEntity() throws Exception {
-    TraineeRepository traineeRepository = new TraineeRepository(storage, trainingRepository, userRepository);
-
-    Method validateEntityMethod = TraineeRepository.class.getDeclaredMethod("validateEntity", Trainee.class);
-    validateEntityMethod.setAccessible(true);
-
-    Trainee trainee = Trainee.builder()
-        .id(1L)
-        .dateOfBirth(LocalDate.of(1990, 5, 15))
-        .address("123 Main St")
-        .trainings(new ArrayList<>())
-        .build();
-
-    try {
-      validateEntityMethod.invoke(traineeRepository, trainee);
-      fail("Expected IllegalArgumentException was not thrown");
-    } catch (InvocationTargetException e) {
-      assertTrue(e.getCause() instanceof IllegalArgumentException);
-      assertEquals("Trainee must have a user", e.getCause().getMessage());
-    }
-  }
-
-  @Test
-  public void testSetUserIfNull() throws Exception {
-    TraineeRepository traineeRepository = new TraineeRepository(storage, trainingRepository, userRepository);
-
-    Method setUserIfNullMethod = TraineeRepository.class.getDeclaredMethod("setUserIfNull", Trainee.class);
-    setUserIfNullMethod.setAccessible(true);
-
-    Trainee trainee = Trainee.builder()
-        .id(1L)
-        .dateOfBirth(LocalDate.of(1990, 5, 15))
-        .address("123 Main St")
-        .trainings(new ArrayList<>())
-        .build();
-
-    UserRepository mockedUserRepository = mock(UserRepository.class);
-
-    Field userRepositoryField = TraineeRepository.class.getDeclaredField("userRepository");
-    userRepositoryField.setAccessible(true);
-    userRepositoryField.set(traineeRepository, mockedUserRepository);
-
-    setUserIfNullMethod.invoke(traineeRepository, trainee);
-
-    verify(mockedUserRepository).create(null);
+    verify(sessionFactory, times(2)).getCurrentSession();
+    verify(session).merge(any());
   }
 }
