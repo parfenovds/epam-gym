@@ -1,22 +1,36 @@
 package com.epam.service;
 
 import com.epam.entity.Training;
-import com.epam.repository.TrainingRepository;
-import java.time.LocalDate;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import com.epam.repository.BaseRepository;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
-public class TrainingServiceTest {
+class TrainingServiceTest {
 
   @Mock
-  private TrainingRepository trainingRepository;
+  private BaseRepository<Training> trainingRepository;
+
+  @Mock
+  private Validator validator;
 
   @InjectMocks
   private TrainingService trainingService;
@@ -27,42 +41,107 @@ public class TrainingServiceTest {
   }
 
   @Test
-  public void testFindById() {
-    Long trainingId = 1L;
-    Training training = Training.builder()
-        .id(trainingId)
-        .traineeId(1L)
-        .trainerId(2L)
-        .trainingName("Java Basics")
-        .trainingTypeId(3L)
-        .trainingDate(LocalDate.of(2023, 9, 15))
-        .trainingDuration(5L)
-        .build();
+  void save_ValidTraining_CreatesTraining() {
+    Training training = new Training();
+    // Set valid fields for the training
 
-    when(trainingRepository.get(trainingId)).thenReturn(training);
+    when(validator.validate(training)).thenReturn(Collections.emptySet());
+    when(trainingRepository.create(training)).thenReturn(training);
 
-    Training foundTraining = trainingService.findById(trainingId);
+    Training savedTraining = trainingService.save(training);
 
-    verify(trainingRepository, times(1)).get(trainingId);
-    assertSame(training, foundTraining);
+    assertNotNull(savedTraining);
+    assertEquals(training, savedTraining);
+    verify(trainingRepository, times(1)).create(training);
   }
 
   @Test
-  public void testSave() {
-    Training trainingToSave = Training.builder()
-        .traineeId(1L)
-        .trainerId(2L)
-        .trainingName("Python Basics")
-        .trainingTypeId(4L)
-        .trainingDate(LocalDate.of(2023, 10, 20))
-        .trainingDuration(6L)
-        .build();
+  void save_InvalidTraining_ThrowsException() {
+    Training training = new Training();
+    // Set invalid fields for the training
 
-    when(trainingRepository.create(trainingToSave)).thenReturn(trainingToSave);
+    Set<ConstraintViolation<Training>> violations = Collections.singleton(mock(ConstraintViolation.class));
+    when(validator.validate(training)).thenReturn(violations);
 
-    Training savedTraining = trainingService.save(trainingToSave);
+    assertThrows(IllegalArgumentException.class, () -> trainingService.save(training));
+    verifyNoInteractions(trainingRepository);
+  }
 
-    verify(trainingRepository, times(1)).create(trainingToSave);
-    assertSame(trainingToSave, savedTraining);
+  @Test
+  void findById_ExistingId_ReturnsTraining() {
+    Long trainingId = 1L;
+    Training training = new Training();
+    training.setId(trainingId);
+
+    when(trainingRepository.get(trainingId)).thenReturn(Optional.of(training));
+
+    Training foundTraining = trainingService.findById(trainingId);
+
+    assertNotNull(foundTraining);
+    assertEquals(trainingId, foundTraining.getId());
+    verify(trainingRepository, times(1)).get(trainingId);
+  }
+
+  @Test
+  void findById_NonExistingId_ThrowsException() {
+    Long trainingId = 1L;
+
+    when(trainingRepository.get(trainingId)).thenReturn(Optional.empty());
+
+    assertThrows(RuntimeException.class, () -> trainingService.findById(trainingId));
+    verify(trainingRepository, times(1)).get(trainingId);
+  }
+
+  @Test
+  void delete_ExistingId_DeletesTraining() {
+    Long trainingId = 1L;
+
+    trainingService.delete(trainingId);
+
+    verify(trainingRepository, times(1)).delete(trainingId);
+  }
+
+  @Test
+  void update_ValidTraining_UpdatesTraining() {
+    Training training = new Training();
+    // Set valid fields for the training
+
+    when(validator.validate(training)).thenReturn(Collections.emptySet());
+    when(trainingRepository.update(training)).thenReturn(training);
+
+    Training updatedTraining = trainingService.update(training);
+
+    assertNotNull(updatedTraining);
+    assertEquals(training, updatedTraining);
+    verify(trainingRepository, times(1)).update(training);
+  }
+
+  @Test
+  void update_InvalidTraining_ThrowsException() {
+    Training training = new Training();
+    // Set invalid fields for the training
+
+    Set<ConstraintViolation<Training>> violations = Collections.singleton(mock(ConstraintViolation.class));
+    when(validator.validate(training)).thenReturn(violations);
+
+    assertThrows(IllegalArgumentException.class, () -> trainingService.update(training));
+    verifyNoInteractions(trainingRepository);
+  }
+
+  @Test
+  void findAll_TrainingsExist_ReturnsTrainings() {
+    Training training1 = new Training();
+    Training training2 = new Training();
+    // Set valid fields for the trainings
+
+    when(trainingRepository.getAll()).thenReturn(List.of(training1, training2));
+
+    Collection<Training> foundTrainings = trainingService.findAll();
+
+    assertNotNull(foundTrainings);
+    assertEquals(2, foundTrainings.size());
+    assertTrue(foundTrainings.contains(training1));
+    assertTrue(foundTrainings.contains(training2));
+    verify(trainingRepository, times(1)).getAll();
   }
 }

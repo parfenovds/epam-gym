@@ -1,27 +1,20 @@
 package com.epam.repository;
 
-
-import com.epam.commonDB.Storage;
-import com.epam.entity.Trainee;
-import com.epam.entity.Trainer;
 import com.epam.entity.User;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
@@ -29,7 +22,13 @@ import org.mockito.MockitoAnnotations;
 class UserRepositoryTest {
 
   @Mock
-  private Storage storage;
+  private SessionFactory sessionFactory;
+
+  @Mock
+  private Session session;
+
+  @Mock
+  private Query<User> query;
 
   @InjectMocks
   private UserRepository userRepository;
@@ -40,146 +39,127 @@ class UserRepositoryTest {
   }
 
   @Test
-  void testGetExistingUser() {
-    Long userId = 1L;
-    User testUser = new User();
-    testUser.setId(userId);
+  void testUsernameToPasswordMatchingCheck_MatchingCredentials_ReturnsTrue() {
+    String username = "testUsername";
+    String password = "testPassword";
 
-    when(storage.getUsers()).thenReturn(Collections.singletonMap(userId, testUser));
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.createQuery("SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class))
+        .thenReturn(query);
+    when(query.setParameter("username", username)).thenReturn(query);
+    when(query.setParameter("password", password)).thenReturn(query);
+    when(query.uniqueResultOptional()).thenReturn(Optional.of(new User()));
 
-    User retrievedUser = userRepository.get(userId);
+    boolean result = userRepository.usernameToPasswordMatchingCheck(username, password);
 
-    assertNotNull(retrievedUser);
-    assertEquals(userId, retrievedUser.getId());
-    verify(storage).getUsers();
+    assertTrue(result);
+
+    verify(sessionFactory).getCurrentSession();
+    verify(session).createQuery("SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class);
+    verify(query).setParameter("username", username);
+    verify(query).setParameter("password", password);
+    verify(query).uniqueResultOptional();
   }
 
   @Test
-  void testGetNonExistingUser() {
-    Long userId = 1L;
+  void testUsernameToPasswordMatchingCheck_NonMatchingCredentials_ReturnsFalse() {
+    String username = "testUsername";
+    String password = "testPassword";
 
-    when(storage.getUsers()).thenReturn(new HashMap<>());
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.createQuery("SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class))
+        .thenReturn(query);
+    when(query.setParameter("username", username)).thenReturn(query);
+    when(query.setParameter("password", password)).thenReturn(query);
+    when(query.uniqueResultOptional()).thenReturn(Optional.empty());
 
-    User retrievedUser = userRepository.get(userId);
+    boolean result = userRepository.usernameToPasswordMatchingCheck(username, password);
 
-    assertNull(retrievedUser);
-    verify(storage).getUsers();
+    assertFalse(result);
+
+    verify(sessionFactory).getCurrentSession();
+    verify(session).createQuery("SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class);
+    verify(query).setParameter("username", username);
+    verify(query).setParameter("password", password);
+    verify(query).uniqueResultOptional();
+  }
+
+  @Test
+  void testGetUserById() {
+    Long id = 1L;
+    User expectedUser = new User();
+
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.get(User.class, id)).thenReturn(expectedUser);
+
+    Optional<User> result = userRepository.get(id);
+
+    assertTrue(result.isPresent());
+    assertEquals(expectedUser, result.get());
+
+    verify(sessionFactory).getCurrentSession();
+    verify(session).get(User.class, id);
+  }
+
+  @Test
+  void testDeleteUserById() {
+    Long id = 1L;
+    User user = new User();
+
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.get(User.class, id)).thenReturn(user);
+
+    userRepository.delete(id);
+
+    verify(sessionFactory, times(2)).getCurrentSession(); // Ожидаем два вызова getCurrentSession()
+    verify(session).get(User.class, id);
+    verify(session).remove(user);
+  }
+
+  @Test
+  void testUpdateUser() {
+    User user = new User();
+
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.merge(user)).thenReturn(user);
+
+    User updatedUser = userRepository.update(user);
+
+    assertEquals(user, updatedUser);
+
+    verify(sessionFactory).getCurrentSession();
+    verify(session).merge(user);
   }
 
   @Test
   void testCreateUser() {
-    User testUser = new User();
-    testUser.setFirstName("John");
-    testUser.setLastName("Doe");
+    User user = new User();
 
-    Map<Long, User> usersMap = new HashMap<>();
-    when(storage.getUsers()).thenReturn(usersMap);
-    when(storage.getNextUserId()).thenReturn(new AtomicLong(1L));
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
 
-    User createdUser = userRepository.create(testUser);
+    User createdUser = userRepository.create(user);
 
-    assertNotNull(createdUser);
-    assertEquals(1, usersMap.size());
-    assertTrue(usersMap.containsKey(createdUser.getId()));
-    verify(storage).getUsers();
-    verify(storage).getNextUserId();
+    assertEquals(user, createdUser);
+
+    verify(sessionFactory).getCurrentSession();
+    verify(session).persist(user);
   }
 
   @Test
-  void testCheckIfUserHasFirstnameAndLastname_ValidUser() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    User user = new User();
-    user.setFirstName("John");
-    user.setLastName("Doe");
+  void testGetAllUsers() {
+    List<User> expectedUsers = Collections.singletonList(new User());
 
-    Method method = UserRepository.class.getDeclaredMethod("checkIfUserHasFirstnameAndLastname", User.class);
-    method.setAccessible(true);
-    assertDoesNotThrow(() -> method.invoke(userRepository, user));
-  }
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
+    when(session.createQuery("SELECT entity FROM User entity ORDER BY entity.id", User.class)).thenReturn(query);
+    when(query.getResultList()).thenReturn(expectedUsers);
 
-  @Test
-  void testCheckIfUserHasFirstnameAndLastname_NullFirstName() throws NoSuchMethodException {
-    User user = new User();
-    user.setLastName("Doe");
+    List<User> result = userRepository.getAll();
 
-    Method method = UserRepository.class.getDeclaredMethod("checkIfUserHasFirstnameAndLastname", User.class);
-    method.setAccessible(true);
+    assertEquals(expectedUsers.size(), result.size());
+    assertEquals(expectedUsers.get(0), result.get(0));
 
-    try {
-      method.invoke(userRepository, user);
-      fail("Expected an IllegalArgumentException to be thrown");
-    } catch (InvocationTargetException e) {
-      Throwable actualException = e.getTargetException();
-      assertEquals("User must have first name and last name", actualException.getMessage());
-      assertTrue(actualException instanceof IllegalArgumentException);
-    } catch (IllegalAccessException e) {
-      fail("Unexpected IllegalAccessException");
-    }
-  }
-
-  @Test
-  void testSetUsernameForUser_NoDuplicates() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    User user = new User();
-    user.setFirstName("John");
-    user.setLastName("Doe");
-
-    Method method = UserRepository.class.getDeclaredMethod("setUsernameForUser", User.class);
-    method.setAccessible(true);
-
-    when(storage.getUsers()).thenReturn(new HashMap<>());
-
-    method.invoke(userRepository, user);
-
-    assertEquals("John.Doe", user.getUsername());
-  }
-
-  @Test
-  void testGetCurrentSerialNumberForDuplicateUsername_WithDuplicates() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    User user = new User();
-    user.setFirstName("John");
-    user.setLastName("Doe");
-
-    Map<Long, Trainee> trainees = new HashMap<>();
-    Trainee trainee1 = new Trainee();
-    User existingUser1 = new User();
-    existingUser1.setUsername("John.Doe");
-    existingUser1.setFirstName("John");
-    existingUser1.setLastName("Doe");
-    trainee1.setUser(existingUser1);
-    trainees.put(1L, trainee1);
-
-    Trainee trainee2 = new Trainee();
-    User existingUser2 = new User();
-    existingUser2.setUsername("John.Doe2");
-    existingUser2.setFirstName("John");
-    existingUser2.setLastName("Doe");
-    trainee2.setUser(existingUser2);
-    trainees.put(2L, trainee2);
-
-    when(storage.getTrainees()).thenReturn(trainees);
-
-    Map<Long, Trainer> trainers = new HashMap<>();
-    Trainer trainer1 = new Trainer();
-    User existingUser3 = new User();
-    existingUser3.setUsername("John.Doe3");
-    existingUser3.setFirstName("John");
-    existingUser3.setLastName("Doe");
-    trainer1.setUser(existingUser3);
-    trainers.put(1L, trainer1);
-
-    Trainer trainer2 = new Trainer();
-    User existingUser4 = new User();
-    existingUser4.setUsername("John.Doe4");
-    existingUser4.setFirstName("John");
-    existingUser4.setLastName("Doe");
-    trainer2.setUser(existingUser4);
-    trainers.put(2L, trainer2);
-
-    when(storage.getTrainers()).thenReturn(trainers);
-
-    Method method = UserRepository.class.getDeclaredMethod("getCurrentSerialNumberForDuplicateUsername", User.class);
-    method.setAccessible(true);
-
-    Optional<Integer> serialNumber = (Optional<Integer>) method.invoke(userRepository, user);
-    assertEquals(4, serialNumber.orElse(-1));
+    verify(sessionFactory).getCurrentSession();
+    verify(session).createQuery("SELECT entity FROM User entity ORDER BY entity.id", User.class);
+    verify(query).getResultList();
   }
 }

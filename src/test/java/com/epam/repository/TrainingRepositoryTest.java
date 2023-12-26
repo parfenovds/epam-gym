@@ -1,27 +1,27 @@
 package com.epam.repository;
 
-import com.epam.commonDB.Storage;
 import com.epam.entity.Training;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Optional;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
-class TrainingRepositoryTest {
+public class TrainingRepositoryTest {
 
   @Mock
-  private Storage storage;
+  private SessionFactory sessionFactory;
+
+  @Mock
+  private Session session;
 
   @InjectMocks
   private TrainingRepository trainingRepository;
@@ -29,71 +29,59 @@ class TrainingRepositoryTest {
   @BeforeEach
   void setUp() {
     MockitoAnnotations.initMocks(this);
-    when(storage.getNextTrainingId()).thenReturn(new AtomicLong(1L));
-    when(storage.getTrainings()).thenReturn(mock(Map.class));
+    when(sessionFactory.getCurrentSession()).thenReturn(session);
   }
 
   @Test
   void testGetById() {
-    Long trainingId = 1L;
-    Training testTraining = new Training();
-    testTraining.setId(trainingId);
+    Long id = 1L;
+    Training training = new Training();
+    when(session.get(eq(Training.class), any(Long.class))).thenReturn(training);
 
-    when(storage.getTrainings()).thenReturn(Map.of(trainingId, testTraining));
+    Optional<Training> result = trainingRepository.get(id);
 
-    Training retrievedTraining = trainingRepository.get(trainingId);
-
-    assertNotNull(retrievedTraining);
-    assertEquals(trainingId, retrievedTraining.getId());
+    assertEquals(training, result.orElse(null));
+    verify(session).get(Training.class, id);
   }
 
   @Test
-  void testCreateTraining() {
-    Training testTraining = new Training();
+  void testDelete() {
+    Long id = 1L;
+    Training training = new Training();
+    when(session.get(eq(Training.class), any(Long.class))).thenReturn(training);
 
-    trainingRepository.create(testTraining);
+    trainingRepository.delete(id);
 
-    verify(storage).getNextTrainingId();
-    verify(storage.getTrainings()).put(any(Long.class), eq(testTraining));
+    verify(session).remove(training);
   }
 
   @Test
-  void testGetTrainingsByField() {
-    Long idToMatch = 1L;
-    Training training1 = new Training();
-    training1.setId(1L);
-    Training training2 = new Training();
-    training2.setId(2L);
-    List<Training> trainings = List.of(training1, training2);
+  void testUpdate() {
+    Training training = new Training();
 
-    when(storage.getTrainings()).thenReturn(Map.of(1L, training1, 2L, training2));
+    trainingRepository.update(training);
 
-    List<Training> retrievedTrainings = trainingRepository.getTrainingsByField(idToMatch, Training::getId);
-
-    assertNotNull(retrievedTrainings);
-    assertEquals(1, retrievedTrainings.size());
-    assertEquals(training1.getId(), retrievedTrainings.get(0).getId());
+    verify(session).merge(training);
   }
 
   @Test
-  void testUpdateTraining() {
-    Long trainingId = 1L;
-    Training updatedTraining = new Training();
-    updatedTraining.setId(trainingId);
+  void testCreate() {
+    Training training = new Training();
 
-    trainingRepository.update(updatedTraining);
+    trainingRepository.create(training);
 
-    verify(storage.getTrainings()).put(trainingId, updatedTraining);
+    verify(session).persist(training);
   }
 
-  @Test
-  void testDeleteTraining() {
-    Long trainingId = 1L;
-
-    when(storage.getTrainings()).thenReturn(mock(Map.class));
-
-    trainingRepository.delete(trainingId);
-
-    verify(storage.getTrainings()).remove(trainingId);
-  }
+//  @Test
+//  void testGetAll() {
+//    List<Training> trainingList = List.of(new Training(), new Training());
+//    when(session.createQuery(anyString(), eq(Training.class))).thenReturn(mock(org.hibernate.query.Query.class));
+//    when(session.createQuery(anyString(), eq(Training.class)).getResultList()).thenReturn(trainingList);
+//
+//    List<Training> result = trainingRepository.getAll();
+//
+//    assertEquals(trainingList, result);
+//    verify(session).createQuery("SELECT entity FROM Training entity ORDER BY entity.id", Training.class);
+//  }
 }
