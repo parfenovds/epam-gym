@@ -5,19 +5,18 @@ import com.epam.entity.Training;
 import com.epam.entity.User;
 import com.epam.repository.TraineeRepository;
 import jakarta.validation.Validator;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
 
 class TraineeServiceTest {
 

@@ -1,9 +1,7 @@
 package com.epam;
 
 import com.epam.entity.Trainee;
-import com.epam.entity.User;
 import com.epam.service.FacadeService;
-import java.time.LocalDate;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
