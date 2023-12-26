@@ -1,162 +1,169 @@
 package com.epam.service;
 
-import com.epam.commonDB.Storage;
-import com.epam.entity.Trainee;
-import com.epam.entity.Trainer;
 import com.epam.entity.User;
 import com.epam.repository.UserRepository;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 
-public class UserServiceTest {
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class UserServiceTest {
 
   @Mock
   private UserRepository userRepository;
 
   @Mock
-  private TrainerService trainerService;
-
-  @Mock
-  private TraineeService traineeService;
-
-  @Mock
-  private Storage storage;
+  private Validator validator;
 
   @InjectMocks
   private UserService userService;
 
   @BeforeEach
-  public void setup() {
+  void setUp() {
     MockitoAnnotations.initMocks(this);
   }
 
   @Test
-  public void testSave() {
+  void save_ValidUser_CreatesUser() {
     User user = new User();
-    user.setFirstName("John");
-    user.setLastName("Doe");
+    // Set valid fields for the user
 
-    when(traineeService.findAll()).thenReturn(List.of());
-    when(trainerService.findAll()).thenReturn(List.of());
+    when(validator.validate(user)).thenReturn(Collections.emptySet());
+    when(userRepository.create(user)).thenReturn(user);
 
-    userService.save(user);
+    User savedUser = userService.save(user);
 
-    verify(userRepository).create(user);
-
-    assertNotNull(user.getUsername());
-    assertTrue(user.getPassword().length() == 10);
+    assertNotNull(savedUser);
+    assertEquals(user, savedUser);
+    verify(userRepository, times(1)).create(user);
   }
 
   @Test
-  void testCheckIfUserHasFirstnameAndLastname_ValidUser() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+  void save_InvalidUser_ThrowsException() {
     User user = new User();
-    user.setFirstName("John");
-    user.setLastName("Doe");
+    // Set invalid fields for the user
 
-    Method method = UserService.class.getDeclaredMethod("checkIfUserHasFirstnameAndLastname", User.class);
-    method.setAccessible(true);
-    assertDoesNotThrow(() -> method.invoke(userService, user));
+    Set<ConstraintViolation<User>> violations = Collections.singleton(mock(ConstraintViolation.class));
+    when(validator.validate(user)).thenReturn(violations);
+
+    assertThrows(IllegalArgumentException.class, () -> userService.save(user));
+    verifyNoInteractions(userRepository);
   }
 
   @Test
-  void testCheckIfUserHasFirstnameAndLastname_NullFirstName() throws NoSuchMethodException {
+  void findById_ExistingId_ReturnsUser() {
+    Long userId = 1L;
     User user = new User();
-    user.setLastName("Doe");
+    user.setId(userId);
 
-    Method method = UserService.class.getDeclaredMethod("checkIfUserHasFirstnameAndLastname", User.class);
-    method.setAccessible(true);
+    when(userRepository.get(userId)).thenReturn(Optional.of(user));
 
-    try {
-      method.invoke(userService, user);
-      fail("Expected an IllegalArgumentException to be thrown");
-    } catch (InvocationTargetException e) {
-      Throwable actualException = e.getTargetException();
-      assertEquals("User must have first name and last name", actualException.getMessage());
-      assertTrue(actualException instanceof IllegalArgumentException);
-    } catch (IllegalAccessException e) {
-      fail("Unexpected IllegalAccessException");
-    }
+    User foundUser = userService.findById(userId);
+
+    assertNotNull(foundUser);
+    assertEquals(userId, foundUser.getId());
+    verify(userRepository, times(1)).get(userId);
   }
 
   @Test
-  void testSetUsernameForUser_NoDuplicates() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    User user = new User();
-    user.setFirstName("John");
-    user.setLastName("Doe");
+  void findById_NonExistingId_ThrowsException() {
+    Long userId = 1L;
 
-    Method method = UserService.class.getDeclaredMethod("setUsernameForUser", User.class);
-    method.setAccessible(true);
+    when(userRepository.get(userId)).thenReturn(Optional.empty());
 
-    when(storage.getUsers()).thenReturn(new HashMap<>());
-
-    method.invoke(userService, user);
-
-    assertEquals("John.Doe", user.getUsername());
+    assertThrows(RuntimeException.class, () -> userService.findById(userId));
+    verify(userRepository, times(1)).get(userId);
   }
+
   @Test
-  void testGetCurrentSerialNumberForDuplicateUsername_WithDuplicates() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+  void delete_ExistingId_DeletesUser() {
+    Long userId = 1L;
+
+    userService.delete(userId);
+
+    verify(userRepository, times(1)).delete(userId);
+  }
+
+  @Test
+  void update_ValidUser_UpdatesUser() {
     User user = new User();
-    user.setFirstName("John");
-    user.setLastName("Doe");
+    // Set valid fields for the user
 
-    List<Trainee> trainees = new ArrayList<>();
-    Trainee trainee1 = new Trainee();
-    User existingUser1 = new User();
-    existingUser1.setUsername("John.Doe");
-    existingUser1.setFirstName("John");
-    existingUser1.setLastName("Doe");
-    trainee1.setUser(existingUser1);
-    trainees.add(trainee1);
+    when(validator.validate(user)).thenReturn(Collections.emptySet());
+    when(userRepository.update(user)).thenReturn(user);
 
-    Trainee trainee2 = new Trainee();
-    User existingUser2 = new User();
-    existingUser2.setUsername("John.Doe2");
-    existingUser2.setFirstName("John");
-    existingUser2.setLastName("Doe");
-    trainee2.setUser(existingUser2);
-    trainees.add(trainee2);
+    User updatedUser = userService.update(user);
 
-    when(traineeService.findAll()).thenReturn(trainees);
+    assertNotNull(updatedUser);
+    assertEquals(user, updatedUser);
+    verify(userRepository, times(1)).update(user);
+  }
 
-    List<Trainer> trainers = new ArrayList<>();
-    Trainer trainer1 = new Trainer();
-    User existingUser3 = new User();
-    existingUser3.setUsername("John.Doe3");
-    existingUser3.setFirstName("John");
-    existingUser3.setLastName("Doe");
-    trainer1.setUser(existingUser3);
-    trainers.add(trainer1);
+  @Test
+  void update_InvalidUser_ThrowsException() {
+    User user = new User();
+    // Set invalid fields for the user
 
-    Trainer trainer2 = new Trainer();
-    User existingUser4 = new User();
-    existingUser4.setUsername("John.Doe4");
-    existingUser4.setFirstName("John");
-    existingUser4.setLastName("Doe");
-    trainer2.setUser(existingUser4);
-    trainers.add(trainer2);
+    Set<ConstraintViolation<User>> violations = Collections.singleton(mock(ConstraintViolation.class));
+    when(validator.validate(user)).thenReturn(violations);
 
-    when(trainerService.findAll()).thenReturn(trainers);
+    assertThrows(IllegalArgumentException.class, () -> userService.update(user));
+    verifyNoInteractions(userRepository);
+  }
 
-    Method method = UserService.class.getDeclaredMethod("getCurrentSerialNumberForDuplicateUsername", User.class);
-    method.setAccessible(true);
+  @Test
+  void findAll_UsersExist_ReturnsUsers() {
+    User user1 = new User();
+    User user2 = new User();
+    // Set valid fields for the users
 
-    Optional<Integer> serialNumber = (Optional<Integer>) method.invoke(userService, user);
-    assertEquals(4, serialNumber.orElse(-1));
+    when(userRepository.getAll()).thenReturn(List.of(user1, user2));
+
+    Collection<User> foundUsers = userService.findAll();
+
+    assertNotNull(foundUsers);
+    assertEquals(2, foundUsers.size());
+    assertTrue(foundUsers.contains(user1));
+    assertTrue(foundUsers.contains(user2));
+    verify(userRepository, times(1)).getAll();
+  }
+
+  @Test
+  void usernameToPasswordMatchingCheck_ValidUsernamePassword_ReturnsTrue() {
+    String username = "testUsername";
+    String password = "testPassword";
+
+    when(userRepository.usernameToPasswordMatchingCheck(username, password)).thenReturn(true);
+
+    boolean result = userService.usernameToPasswordMatchingCheck(username, password);
+
+    assertTrue(result);
+    verify(userRepository, times(1)).usernameToPasswordMatchingCheck(username, password);
+  }
+
+  @Test
+  void usernameToPasswordMatchingCheck_InvalidUsernamePassword_ReturnsFalse() {
+    String username = "testUsername";
+    String password = "testPassword";
+
+    when(userRepository.usernameToPasswordMatchingCheck(username, password)).thenReturn(false);
+
+    boolean result = userService.usernameToPasswordMatchingCheck(username, password);
+
+    assertFalse(result);
+    verify(userRepository, times(1)).usernameToPasswordMatchingCheck(username, password);
   }
 }
